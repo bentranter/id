@@ -3,8 +3,6 @@ package twitch
 import (
 	"net/http"
 	"os"
-
-	"github.com/bentranter/psa"
 )
 
 const (
@@ -25,6 +23,7 @@ func New() *Provider {
 	}
 }
 
+// Provider does this.. might call this Twitch instead
 type Provider struct {
 	ClientID     string
 	ClientSecret string
@@ -34,19 +33,27 @@ type Provider struct {
 	IdentityURL  string
 }
 
-func (p *Provider) Authorize(w http.ResponseWriter, r *http.Request) {
-	psa.BuildAuthURL(p)
+// BuildAuthURL builds the authenticartion endpoint that we
+// redirect our users to.
+func (p *Provider) BuildAuthURL() string {
+	return p.AuthURL
 }
 
-// Authorize does the whole process. It authenticates with
-// the auth provider, and sets a cookie for our middleware
-// to deal with.
-// func Authorize(w http.ResponseWriter, r *http.Request) {
-// 	// Redirect them to the sign in URL
-// 	config := psa.NewConfig(os.Getenv("TWITCH_KEY"), os.Getenv("TWITCH_SECRET"), "http://localhost:3000/auth/twitch/callback", authURL, tokenURL)
-// 	url := config.BuildAuthURL()
-// 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-// }
+// GetCode gets the short-lived access code from the
+// callback URL that we can exchange for an access
+// token.
+func (p *Provider) GetCode(r *http.Request) string {
+	code := r.URL.Query().Get("code")
+	return code
+}
+
+func (p *Provider) GetAccessToken() string {
+	return ""
+}
+
+func (p *Provider) GetIdentity() string {
+	return ""
+}
 
 // // Callback handles the rest.
 // func Callback(w http.ResponseWriter, r *http.Request) {
