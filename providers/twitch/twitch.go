@@ -3,6 +3,8 @@ package twitch
 import (
 	"net/http"
 	"os"
+
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -11,40 +13,49 @@ const (
 	ScopeUserRead string = "user_read"
 )
 
-// New returns a new provider.
+// New returns a new provider. Some providers have their
+// endpoints as part of the Oauth2 package.
 func New() *Provider {
 	return &Provider{
-		ClientID:     os.Getenv("TWITCH_KEY"),
-		ClientSecret: os.Getenv("TWITCH_SECRET"),
-		CallbackURL:  "http://localhost:3000/auth/twitch/callback",
-		AuthURL:      "https://api.twitch.tv/kraken/oauth2/authorize",
-		TokenURL:     "https://api.twitch.tv/kraken/oauth2/token",
-		IdentityURL:  "https://api.twitch.tv/kraken/user",
+		config: &oauth2.Config{
+			ClientID:     os.Getenv("TWITCH_KEY"),
+			ClientSecret: os.Getenv("TWICTH_SECRET"),
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "https://api.twitch.tv/kraken/oauth2/authorize",
+				TokenURL: "https://api.twitch.tv/kraken/oauth2/token",
+			},
+			RedirectURL: "http://localhost:3000/auth/twitch/callback",
+			Scopes:      []string{ScopeUserRead},
+		},
+		IdentityURL: "",
 	}
 }
 
-// Provider does this.. might call this Twitch instead
+// Provider holds all the info for our Oauth2 provider.
 type Provider struct {
-	ClientID     string
-	ClientSecret string
-	CallbackURL  string
-	AuthURL      string
-	TokenURL     string
-	IdentityURL  string
+	config      *oauth2.Config
+	IdentityURL string
 }
 
 // BuildAuthURL builds the authenticartion endpoint that we
-// redirect our users to.
-func (p *Provider) BuildAuthURL() string {
-	return p.AuthURL
+// redirect our users to. State needs to be an unguessable
+// string (probability of guessing < 2^128).
+//
+// It might be possible here to write some helper that
+// generates a cryptographically secure state string, and
+// uses that an a nonce. Since the provider instance is
+// "alive" across our middleware, we could tack the nonce
+// onto the middleware, and verify it once the identity
+// provider returns it?
+func (p *Provider) BuildAuthURL(state string) string {
+	return p.config.AuthCodeURL(state, oauth2.AccessTypeOffline)
 }
 
-// GetCode gets the short-lived access code from the
+// GetCodeURL gets the short-lived access code from the
 // callback URL that we can exchange for an access
 // token.
-func (p *Provider) GetCode(r *http.Request) string {
-	code := r.URL.Query().Get("code")
-	return code
+func (p *Provider) GetCodeURL(r *http.Request) string {
+	return ""
 }
 
 func (p *Provider) GetAccessToken() string {

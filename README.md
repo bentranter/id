@@ -13,3 +13,6 @@ func main() {
 
     http.ListenAndServe(":3000", nil)
 }
+```
+
+Need to try Julien's router, and the Gorilla one.
