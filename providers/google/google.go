@@ -2,7 +2,6 @@ package google
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -75,13 +74,12 @@ func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
 func (p *Provider) GetIdentity(tok *oauth2.Token) (string, error) {
 	client := p.config.Client(oauth2.NoContext, tok)
 	resp, err := client.Get(p.IdentityURL)
-	fmt.Printf("Res: %+v\nErr: %s\n", resp, err)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 	user := readBody(resp.Body)
-	fmt.Printf("User: %+v\n", user)
+	// NEXT: Set a JSON web token from this info
 	return "", nil
 }
 
