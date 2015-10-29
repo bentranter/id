@@ -15,4 +15,6 @@ func main() {
 }
 ```
 
-Need to try Julien's router, and the Gorilla one.
+It works with Gorilla's Mux, Pat, Julien Schmidt's HttpRouter, and of course the standard `net/http` package.
+
+Need to figure out middleware approach... check Matt and Julien's stuff.

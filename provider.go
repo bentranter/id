@@ -1,17 +1,19 @@
 package psa
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"golang.org/x/oauth2"
 )
 
 // Provider implements all the functions we need.
 type Provider interface {
 	BuildAuthURL(state string) string
 	GetCodeURL(r *http.Request) string
-	GetAccessToken() string
-	GetIdentity() string
+	GetToken(code string) (*oauth2.Token, error)
+	GetIdentity(*oauth2.Token) string
 }
 
 // Authorize builds the auth url and redirects a user to
@@ -27,7 +29,12 @@ func Authorize(p Provider) http.HandlerFunc {
 func Callback(p Provider) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		code := p.GetCodeURL(r)
-		http.Get(code)
+		tok, err := p.GetToken(code)
+		if err != nil {
+			fmt.Printf("Error provider.go L33: %+v\n", err)
+		}
+		resp := p.GetIdentity(tok)
+		w.Write([]byte(resp))
 	})
 }
 
@@ -47,6 +54,10 @@ func HTTPRouterAuthorize(p Provider) httprouter.Handle {
 func HTTPRouterCallback(p Provider) httprouter.Handle {
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		code := p.GetCodeURL(r)
-		http.Get(code)
+		tok, err := p.GetToken(code)
+		if err != nil {
+			panic(err) // For now
+		}
+		_ = p.GetIdentity(tok)
 	})
 }

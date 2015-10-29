@@ -1,6 +1,7 @@
 package twitch
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -19,7 +20,7 @@ func New() *Provider {
 	return &Provider{
 		config: &oauth2.Config{
 			ClientID:     os.Getenv("TWITCH_KEY"),
-			ClientSecret: os.Getenv("TWICTH_SECRET"),
+			ClientSecret: os.Getenv("TWITCH_SECRET"),
 			Endpoint: oauth2.Endpoint{
 				AuthURL:  "https://api.twitch.tv/kraken/oauth2/authorize",
 				TokenURL: "https://api.twitch.tv/kraken/oauth2/token",
@@ -27,7 +28,7 @@ func New() *Provider {
 			RedirectURL: "http://localhost:3000/auth/twitch/callback",
 			Scopes:      []string{ScopeUserRead},
 		},
-		IdentityURL: "",
+		IdentityURL: "https://api.twitch.tv/kraken/user",
 	}
 }
 
@@ -55,27 +56,44 @@ func (p *Provider) BuildAuthURL(state string) string {
 // callback URL that we can exchange for an access
 // token.
 func (p *Provider) GetCodeURL(r *http.Request) string {
-	return ""
+	return r.URL.Query().Get("code")
 }
 
-func (p *Provider) GetAccessToken() string {
-	return ""
+// GetToken gets the access and refresh tokens from the
+// provider. Should probably be called `GetTokens`.
+func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
+	tok, err := p.config.Exchange(oauth2.NoContext, code)
+	return tok, err
 }
 
-func (p *Provider) GetIdentity() string {
-	return ""
-}
+// GetIdentity get's the client's identity from the
+// provider. I'm not sure what every provider returns...
+// I should look at what they do is Passport.js
+//
+// For all the providers that love to do weird stuff,
+func (p *Provider) GetIdentity(tok *oauth2.Token) string {
+	client := p.config.Client(oauth2.NoContext, tok)
 
-// // Callback handles the rest.
-// func Callback(w http.ResponseWriter, r *http.Request) {
-// 	code := r.URL.Query().Get("code")
-// 	config := psa.NewConfig(os.Getenv("TWITCH_KEY"), os.Getenv("TWITCH_SECRET"), "http://localhost:3000/auth/twitch/callback", authURL, tokenURL)
-// 	url := config.BuildTokenURL(code)
-// 	req, err := http.NewRequest("POST", tokenURL, url)
-// 	resp, err := http.DefaultClient.Do(req)
-// 	if err != nil {
-// 		log.Fatalf("It's broken: %s\n", err)
-// 	}
-// 	log.Printf("Response: %+v\n", resp)
-// 	defer resp.Body.Close()
-// }
+	req, err := http.NewRequest("GET", p.IdentityURL, nil)
+	req.Header.Add("Accept", "application/vnd.twitchtv.v3+json")
+	fmt.Printf("Token?: %+v\n", tok)
+	req.Header.Add("Authorization", "OAuth "+tok.AccessToken)
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Sprintf("Error: %s\n", err)
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case 200:
+		return "Twitch: 200 Ok.\n\nIt worked!"
+	case 400:
+		return fmt.Sprintf("Twitch: 400 Bad Request\n\nFor some reason, fetching a token failed. It's likely you when over a rate limit.\n\n%+v\n", resp)
+	case 401:
+		return fmt.Sprintf("Twitch: 401 Unauthorized.\n\nPlease double check that the IdentityURL is valid, that the following headers are set:\n\nAccept: application/vnd.twitchtv.v3+json\nAuthorization: OAuth %s\n\nIf you continue to have trouble, file an issue on GitHub.\n", tok.AccessToken)
+	case 404:
+		return "Twitch: 404 Not Found.\n\nThe requested resource wasn't available. There might be a problem with this user's Twitch account.\n"
+	default:
+		return fmt.Sprintf("Twitch: %s %s\n", resp.StatusCode, resp.Status)
+	}
+}
