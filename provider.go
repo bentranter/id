@@ -8,12 +8,20 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// User contains the bare minimum info we need to identify
+// someone from a provider.
+type User struct {
+	Email string
+	ID    string
+	Name  string
+}
+
 // Provider implements all the functions we need.
 type Provider interface {
 	BuildAuthURL(state string) string
 	GetCodeURL(r *http.Request) string
 	GetToken(code string) (*oauth2.Token, error)
-	GetIdentity(*oauth2.Token) string
+	GetIdentity(*oauth2.Token) (string, error)
 }
 
 // Authorize builds the auth url and redirects a user to
@@ -31,10 +39,10 @@ func Callback(p Provider) http.HandlerFunc {
 		code := p.GetCodeURL(r)
 		tok, err := p.GetToken(code)
 		if err != nil {
-			fmt.Printf("Error provider.go L33: %+v\n", err)
+			fmt.Fprintf(w, "ERROR: %s\n", err)
 		}
-		resp := p.GetIdentity(tok)
-		w.Write([]byte(resp))
+		resp, err := p.GetIdentity(tok)
+		fmt.Fprintf(w, "Message: %s, error: %s\n", resp, err)
 	})
 }
 
@@ -56,8 +64,9 @@ func HTTPRouterCallback(p Provider) httprouter.Handle {
 		code := p.GetCodeURL(r)
 		tok, err := p.GetToken(code)
 		if err != nil {
-			panic(err) // For now
+			fmt.Fprintf(w, "Error: %s\n", err)
 		}
-		_ = p.GetIdentity(tok)
+		resp, err := p.GetIdentity(tok)
+		fmt.Fprintf(w, "Message: %s, error: %s\n", resp, err)
 	})
 }

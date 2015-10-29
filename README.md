@@ -18,3 +18,7 @@ func main() {
 It works with Gorilla's Mux, Pat, Julien Schmidt's HttpRouter, and of course the standard `net/http` package.
 
 Need to figure out middleware approach... check Matt and Julien's stuff.
+
+* Figure out why it won't work with Twitch
+* Solve LinkedIn opaque URL problem (think you can tweak http.Client)
+* Add param for redirect after callback URL fires

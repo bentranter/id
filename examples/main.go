@@ -5,21 +5,21 @@ import (
 	"net/http"
 
 	"github.com/bentranter/psa"
-	"github.com/bentranter/psa/providers/twitch"
+	"github.com/bentranter/psa/providers/google"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/pat"
 
-	"github.com/julienschmidt/httprouter"
+	//"github.com/julienschmidt/httprouter"
 )
 
 func main() {
 	// Initialize any provider
-	provider := twitch.New()
+	provider := google.New()
 
 	// Bare http
-	http.HandleFunc("/auth/twitch/authorize", psa.Authorize(provider))
-	http.HandleFunc("/auth/twitch/callback", psa.Callback(provider))
+	http.Handle("/auth/gplus/authorize", psa.Authorize(provider))
+	http.Handle("/auth/gplus/callback", psa.Callback(provider))
 
 	// Default mux
 	serveMux := http.NewServeMux()
@@ -37,9 +37,9 @@ func main() {
 	m.HandleFunc("/auth/twitch/callback", psa.Callback(provider))
 
 	// Julien Schmidt's httprouter
-	r := httprouter.New()
-	r.GET("/auth/twitch/authorize", psa.HTTPRouterAuthorize(provider))
-	r.GET("/auth/twitch/callback", psa.HTTPRouterCallback(provider))
+	// r := httprouter.New()
+	// r.GET("/httprouter/auth/twitch/authorize", psa.HTTPRouterAuthorize(provider))
+	// r.GET("/httprouter/auth/twitch/callback", psa.HTTPRouterCallback(provider))
 
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }

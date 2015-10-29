@@ -1,18 +1,21 @@
-package twitch
+package google
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
-	"time"
 
+	"github.com/bentranter/psa"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 const (
-	// ScopeUserRead allows the client to access the user's
-	// email address and id (for example)
-	ScopeUserRead string = "user_read"
+// ScopeUserRead allows the client to access the user's
+// email address and id (for example)
+// ScopeUserRead string = "user_read"
 )
 
 // New returns a new provider. Some providers have their
@@ -20,16 +23,13 @@ const (
 func New() *Provider {
 	return &Provider{
 		config: &oauth2.Config{
-			ClientID:     os.Getenv("TWITCH_KEY"),
-			ClientSecret: os.Getenv("TWITCH_SECRET"),
-			Endpoint: oauth2.Endpoint{
-				AuthURL:  "https://api.twitch.tv/kraken/oauth2/authorize",
-				TokenURL: "https://api.twitch.tv/kraken/oauth2/token",
-			},
-			RedirectURL: "http://localhost:3000/auth/twitch/callback",
-			Scopes:      []string{ScopeUserRead},
+			ClientID:     os.Getenv("GPLUS_KEY"),
+			ClientSecret: os.Getenv("GPLUS_SECRET"),
+			Endpoint:     google.Endpoint,
+			RedirectURL:  "http://localhost:3000/auth/gplus/callback",
+			Scopes:       []string{"profile", "email"},
 		},
-		IdentityURL: "https://api.twitch.tv/kraken/user",
+		IdentityURL: "https://www.googleapis.com/oauth2/v2/userinfo",
 	}
 }
 
@@ -73,31 +73,33 @@ func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
 //
 // For all the providers that love to do weird stuff,
 func (p *Provider) GetIdentity(tok *oauth2.Token) (string, error) {
-	t := time.Now()
-	tok.TokenType = "OAuth"
 	client := p.config.Client(oauth2.NoContext, tok)
-
-	req, err := http.NewRequest("GET", p.IdentityURL, nil)
-	req.Header.Add("Accept", "application/vnd.twitchtv.v3+json")
-	fmt.Println("Tried to read access code at ", time.Since(t))
-	req.Header.Add("Authorization", "OAuth"+tok.AccessToken)
-	resp, err := client.Do(req)
+	resp, err := client.Get(p.IdentityURL)
+	fmt.Printf("Res: %+v\nErr: %s\n", resp, err)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	fmt.Println("Got response at: ", time.Since(t))
+	user := readBody(resp.Body)
+	fmt.Printf("User: %+v\n", user)
+	return "", nil
+}
 
-	switch resp.StatusCode {
-	case 200:
-		return "Twitch: 200 Ok.\n\nIt worked!", nil
-	case 400:
-		return fmt.Sprintf("Twitch: 400 Bad Request\n\nFor some reason, fetching a token failed. It's likely you when over a rate limit.\n\n%+v\n", resp), nil
-	case 401:
-		return fmt.Sprintf("Twitch: 401 Unauthorized.\n\nPlease double check that the IdentityURL is valid, that the following headers are set:\n\nAccept: application/vnd.twitchtv.v3+json\nAuthorization: OAuth %s\n\nIf you continue to have trouble, file an issue on GitHub.\n", tok.AccessToken), nil
-	case 404:
-		return "Twitch: 404 Not Found.\n\nThe requested resource wasn't available. There might be a problem with this user's Twitch account.\n", nil
-	default:
-		return fmt.Sprintf("Twitch: %s %s\n", resp.StatusCode, resp.Status), nil
+func readBody(r io.Reader) *psa.User {
+	user := struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}{}
+
+	err := json.NewDecoder(r).Decode(&user)
+	if err != nil {
+		panic(err)
+	}
+
+	return &psa.User{
+		Name:  user.Name,
+		Email: user.Email,
+		ID:    user.ID,
 	}
 }
