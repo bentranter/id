@@ -2,7 +2,6 @@ package facebook
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -72,17 +71,17 @@ func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
 // I should look at what they do is Passport.js
 //
 // For all the providers that love to do weird stuff,
-func (p *Provider) GetIdentity(tok *oauth2.Token) (string, error) {
+func (p *Provider) GetIdentity(tok *oauth2.Token) (*psa.User, error) {
 	client := p.config.Client(oauth2.NoContext, tok)
+
 	resp, err := client.Get(p.IdentityURL)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
+
 	user := readBody(resp.Body)
-	fmt.Printf("User: %+v\n", user)
-	// NEXT: Set a JSON web token from this info
-	return "", nil
+	return user, nil
 }
 
 func readBody(r io.Reader) *psa.User {

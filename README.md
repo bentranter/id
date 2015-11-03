@@ -22,3 +22,8 @@ Need to figure out middleware approach... check Matt and Julien's stuff.
 * Figure out why it won't work with Twitch
 * Solve LinkedIn opaque URL problem (think you can tweak http.Client)
 * Add param for redirect after callback URL fires
+
+
+**FIGURE OUT WHY THIS SOMETIMES PANICS???**
+
+Maybe it's a race condition? The trace shows `psa.genToken(0x0, 0x0, 0x0)`, and it only happens sometimes... Can I lock it?

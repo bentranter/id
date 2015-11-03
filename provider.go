@@ -3,7 +3,9 @@ package psa
 import (
 	"fmt"
 	"net/http"
+	"time"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/oauth2"
 )
@@ -21,12 +23,12 @@ type Provider interface {
 	BuildAuthURL(state string) string
 	GetCodeURL(r *http.Request) string
 	GetToken(code string) (*oauth2.Token, error)
-	GetIdentity(*oauth2.Token) (string, error)
+	GetIdentity(*oauth2.Token) (*User, error)
 }
 
 // Authorize builds the auth url and redirects a user to
 // it.
-func Authorize(p Provider) http.HandlerFunc {
+func Authorize(p Provider) http.Handler {
 	url := p.BuildAuthURL("state")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
@@ -34,15 +36,17 @@ func Authorize(p Provider) http.HandlerFunc {
 }
 
 // Callback handles the callback part of the flow.
-func Callback(p Provider) http.HandlerFunc {
+func Callback(p Provider) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		code := p.GetCodeURL(r)
 		tok, err := p.GetToken(code)
 		if err != nil {
 			fmt.Fprintf(w, "ERROR: %s\n", err)
 		}
-		resp, err := p.GetIdentity(tok)
-		fmt.Fprintf(w, "Message: %s, error: %s\n", resp, err)
+		user, err := p.GetIdentity(tok)
+		cookie := genToken(user)
+		http.SetCookie(w, cookie)
+		w.Write([]byte("Go to /auth/restricted"))
 	})
 }
 
@@ -66,7 +70,43 @@ func HTTPRouterCallback(p Provider) httprouter.Handle {
 		if err != nil {
 			fmt.Fprintf(w, "Error: %s\n", err)
 		}
-		resp, err := p.GetIdentity(tok)
-		fmt.Fprintf(w, "Message: %s, error: %s\n", resp, err)
+		user, err := p.GetIdentity(tok)
+		cookie := genToken(user)
+		http.SetCookie(w, cookie)
 	})
+}
+
+// I NEED TO READ THE SPEC:
+//
+// http://tools.ietf.org/html/rfc7519
+func genToken(user *User) *http.Cookie {
+	jwt := jwt.New(jwt.SigningMethodHS256)
+
+	// Claims defined in the spec
+	jwt.Claims["iss"] = "YOUR_SITE_NAME_OR_URI"
+	jwt.Claims["sub"] = user.ID
+	jwt.Claims["aud"] = "YOUR_SITE_NAME_OR_URI"
+	jwt.Claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	jwt.Claims["iat"] = time.Now().Unix()
+	jwt.Claims["jti"] = "state" // Figure out what to do about this... it's techinically used to prevent replay attacks
+
+	// These are optional/not in spec
+	jwt.Claims["name"] = user.Name
+	jwt.Claims["email"] = user.Email
+	jwt.Claims["id"] = user.ID
+	jwt.Claims["role"] = "user"
+
+	tokStr, err := jwt.SignedString([]byte("SECURE_KEY_HERE"))
+	if err != nil {
+		fmt.Printf("Error signing string: %s\n", err)
+	}
+
+	// Maybe use the access token expiry time in the raw
+	// expires...
+	return &http.Cookie{
+		Name:       "psa",
+		Value:      tokStr,
+		Path:       "/",
+		RawExpires: "0",
+	}
 }
