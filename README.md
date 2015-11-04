@@ -27,3 +27,7 @@ Need to figure out middleware approach... check Matt and Julien's stuff.
 **FIGURE OUT WHY THIS SOMETIMES PANICS???**
 
 Maybe it's a race condition? The trace shows `psa.genToken(0x0, 0x0, 0x0)`, and it only happens sometimes... Can I lock it?
+
+# WARNING
+
+This is extremely insecure. All errors need to be handled surrounding the token, the verification of the token isn't correct, the HMAC might not be occurring correctly, a token is still generated when `psa.User.ID/Email/Name` is `nil`... basically it's bad.
