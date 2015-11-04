@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/bentranter/psa"
-	"github.com/bentranter/psa/providers/facebook"
+	"github.com/bentranter/psa/providers/twitch"
 
 	// "github.com/gorilla/mux"
 	// "github.com/gorilla/pat"
@@ -15,11 +15,11 @@ import (
 
 func main() {
 	// Initialize any provider
-	provider := facebook.New()
+	provider := twitch.New()
 
 	// Bare http
-	http.Handle("/auth/facebook/authorize", psa.Authorize(provider))
-	http.Handle("/auth/facebook/callback", psa.Callback(provider))
+	http.Handle("/auth/twitch/authorize", psa.Authorize(provider))
+	http.Handle("/auth/twitch/callback", psa.Callback(provider))
 	http.Handle("/auth/restricted", psa.Middleware(psa.Verify, psa.Verified))
 
 	// // Default mux

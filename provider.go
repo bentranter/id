@@ -108,5 +108,7 @@ func genToken(user *User) *http.Cookie {
 		Value:      tokStr,
 		Path:       "/",
 		RawExpires: "0",
+		// Eventually, you'll need `secure` to be true
+		HttpOnly: true,
 	}
 }

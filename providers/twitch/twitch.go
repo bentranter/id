@@ -1,11 +1,12 @@
 package twitch
 
 import (
-	"fmt"
+	"encoding/json"
+	"io"
 	"net/http"
 	"os"
-	"time"
 
+	"github.com/bentranter/psa"
 	"golang.org/x/oauth2"
 )
 
@@ -72,32 +73,37 @@ func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
 // I should look at what they do is Passport.js
 //
 // For all the providers that love to do weird stuff,
-func (p *Provider) GetIdentity(tok *oauth2.Token) (string, error) {
-	t := time.Now()
-	tok.TokenType = "OAuth"
+func (p *Provider) GetIdentity(tok *oauth2.Token) (*psa.User, error) {
 	client := p.config.Client(oauth2.NoContext, tok)
 
 	req, err := http.NewRequest("GET", p.IdentityURL, nil)
 	req.Header.Add("Accept", "application/vnd.twitchtv.v3+json")
-	fmt.Println("Tried to read access code at ", time.Since(t))
 	req.Header.Add("Authorization", "OAuth"+tok.AccessToken)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
-	fmt.Println("Got response at: ", time.Since(t))
 
-	switch resp.StatusCode {
-	case 200:
-		return "Twitch: 200 Ok.\n\nIt worked!", nil
-	case 400:
-		return fmt.Sprintf("Twitch: 400 Bad Request\n\nFor some reason, fetching a token failed. It's likely you when over a rate limit.\n\n%+v\n", resp), nil
-	case 401:
-		return fmt.Sprintf("Twitch: 401 Unauthorized.\n\nPlease double check that the IdentityURL is valid, that the following headers are set:\n\nAccept: application/vnd.twitchtv.v3+json\nAuthorization: OAuth %s\n\nIf you continue to have trouble, file an issue on GitHub.\n", tok.AccessToken), nil
-	case 404:
-		return "Twitch: 404 Not Found.\n\nThe requested resource wasn't available. There might be a problem with this user's Twitch account.\n", nil
-	default:
-		return fmt.Sprintf("Twitch: %s %s\n", resp.StatusCode, resp.Status), nil
+	user := readBody(resp.Body)
+	return user, nil
+}
+
+func readBody(r io.Reader) *psa.User {
+	user := struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}{}
+
+	err := json.NewDecoder(r).Decode(&user)
+	if err != nil {
+		panic(err)
+	}
+
+	return &psa.User{
+		Name:  user.Name,
+		Email: user.Email,
+		ID:    user.ID,
 	}
 }

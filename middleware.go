@@ -7,9 +7,10 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
+// Handler is the function definition for our middleware.
 type Handler func(w http.ResponseWriter, r *http.Request) error
 
-// Middleware executes all our middleware
+// Middleware executes all our middleware.
 func Middleware(handlers ...Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for _, handler := range handlers {
@@ -23,7 +24,7 @@ func Middleware(handlers ...Handler) http.Handler {
 }
 
 // Verify checks to make sure there is a cookie with a
-// valid JWT
+// valid JWT.
 func Verify(w http.ResponseWriter, r *http.Request) error {
 	cookie, err := r.Cookie("psa")
 	if err != nil {
