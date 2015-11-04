@@ -66,11 +66,8 @@ func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
 	return tok, err
 }
 
-// GetIdentity get's the client's identity from the
-// provider. I'm not sure what every provider returns...
-// I should look at what they do is Passport.js
-//
-// For all the providers that love to do weird stuff,
+// GetIdentity gets the client's identity from the
+// provider.
 func (p *Provider) GetIdentity(tok *oauth2.Token) (*psa.User, error) {
 	client := p.config.Client(oauth2.NoContext, tok)
 

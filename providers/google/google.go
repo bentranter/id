@@ -12,13 +12,18 @@ import (
 )
 
 const (
-// ScopeUserRead allows the client to access the user's
-// email address and id (for example)
-// ScopeUserRead string = "user_read"
+	// ScopeProfile allows the client to access the user's
+	// profile info.
+	ScopeProfile string = "profile"
+
+	//ScopeEmail allows the cient to access the user's
+	// email address.
+	ScopeEmail string = "email"
 )
 
 // New returns a new provider. Some providers have their
-// endpoints as part of the Oauth2 package.
+// endpoints as part of the Oauth2 package, and Google is
+// one of them.
 func New() *Provider {
 	return &Provider{
 		config: &oauth2.Config{
@@ -26,7 +31,7 @@ func New() *Provider {
 			ClientSecret: os.Getenv("GPLUS_SECRET"),
 			Endpoint:     google.Endpoint,
 			RedirectURL:  "http://localhost:3000/auth/gplus/callback",
-			Scopes:       []string{"profile", "email"},
+			Scopes:       []string{ScopeEmail, ScopeProfile},
 		},
 		IdentityURL: "https://www.googleapis.com/oauth2/v2/userinfo",
 	}
@@ -38,16 +43,8 @@ type Provider struct {
 	IdentityURL string
 }
 
-// BuildAuthURL builds the authenticartion endpoint that we
-// redirect our users to. State needs to be an unguessable
-// string (probability of guessing < 2^128).
-//
-// It might be possible here to write some helper that
-// generates a cryptographically secure state string, and
-// uses that an a nonce. Since the provider instance is
-// "alive" across our middleware, we could tack the nonce
-// onto the middleware, and verify it once the identity
-// provider returns it?
+// BuildAuthURL builds the authentication endpoint that we
+// redirect our users to.
 func (p *Provider) BuildAuthURL(state string) string {
 	return p.config.AuthCodeURL(state, oauth2.AccessTypeOffline)
 }
@@ -60,17 +57,14 @@ func (p *Provider) GetCodeURL(r *http.Request) string {
 }
 
 // GetToken gets the access and refresh tokens from the
-// provider. Should probably be called `GetTokens`.
+// provider.
 func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
 	tok, err := p.config.Exchange(oauth2.NoContext, code)
 	return tok, err
 }
 
-// GetIdentity get's the client's identity from the
-// provider. I'm not sure what every provider returns...
-// I should look at what they do is Passport.js
-//
-// For all the providers that love to do weird stuff,
+// GetIdentity gets the client's identity from the
+// provider.
 func (p *Provider) GetIdentity(tok *oauth2.Token) (*psa.User, error) {
 	client := p.config.Client(oauth2.NoContext, tok)
 
