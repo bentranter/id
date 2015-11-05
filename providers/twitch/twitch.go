@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/bentranter/psa"
+	"github.com/bentranter/id"
 	"golang.org/x/oauth2"
 )
 
@@ -94,7 +94,7 @@ func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
 
 // GetIdentity gets the client's identity from the
 // provider.
-func (p *Provider) GetIdentity(tok *oauth2.Token) (*psa.User, error) {
+func (p *Provider) GetIdentity(tok *oauth2.Token) (*id.User, error) {
 	client := p.config.Client(oauth2.NoContext, tok)
 
 	// Twitch doesn't follow the Oauth2 spec correctly. The
@@ -115,9 +115,9 @@ func (p *Provider) GetIdentity(tok *oauth2.Token) (*psa.User, error) {
 }
 
 // readBody is just a convenience method for getting a
-// `*psa.User` out of the JSON response from the Twitch
+// `*id.User` out of the JSON response from the Twitch
 // API.
-func readBody(r io.Reader) *psa.User {
+func readBody(r io.Reader) *id.User {
 	user := struct {
 		ID    string `json:"id"`
 		Email string `json:"email"`
@@ -129,7 +129,7 @@ func readBody(r io.Reader) *psa.User {
 		panic(err)
 	}
 
-	return &psa.User{
+	return &id.User{
 		Name:  user.Name,
 		Email: user.Email,
 		ID:    user.ID,

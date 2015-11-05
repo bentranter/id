@@ -1,4 +1,4 @@
-package psa
+package id
 
 import (
 	"fmt"
@@ -36,7 +36,7 @@ func Authorize(p Provider) http.Handler {
 }
 
 // Callback handles the callback part of the flow.
-func Callback(p Provider) http.Handler {
+func Callback(p Provider, redirectURL string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		code := p.GetCodeURL(r)
 		tok, err := p.GetToken(code)
@@ -44,9 +44,14 @@ func Callback(p Provider) http.Handler {
 			fmt.Fprintf(w, "ERROR: %s\n", err)
 		}
 		user, err := p.GetIdentity(tok)
+		if err != nil {
+			fmt.Fprintf(w, "ERROR: %s\n", err)
+		}
+
 		cookie := genToken(user)
 		http.SetCookie(w, cookie)
-		w.Write([]byte("Go to /auth/restricted"))
+
+		http.Redirect(w, r, "http://localhost:3000/"+redirectURL, http.StatusFound)
 	})
 }
 
@@ -104,7 +109,7 @@ func genToken(user *User) *http.Cookie {
 	// Maybe use the access token expiry time in the raw
 	// expires...
 	return &http.Cookie{
-		Name:       "psa",
+		Name:       "id",
 		Value:      tokStr,
 		Path:       "/",
 		RawExpires: "0",

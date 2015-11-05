@@ -1,4 +1,4 @@
-package psa
+package id
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ func Middleware(handlers ...Handler) http.Handler {
 // Verify checks to make sure there is a cookie with a
 // valid JWT.
 func Verify(w http.ResponseWriter, r *http.Request) error {
-	cookie, err := r.Cookie("psa")
+	cookie, err := r.Cookie("id")
 	if err != nil {
 		return err
 	}

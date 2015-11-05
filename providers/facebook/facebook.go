@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/bentranter/psa"
+	"github.com/bentranter/id"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/facebook"
 )
@@ -68,7 +68,7 @@ func (p *Provider) GetToken(code string) (*oauth2.Token, error) {
 
 // GetIdentity gets the client's identity from the
 // provider.
-func (p *Provider) GetIdentity(tok *oauth2.Token) (*psa.User, error) {
+func (p *Provider) GetIdentity(tok *oauth2.Token) (*id.User, error) {
 	client := p.config.Client(oauth2.NoContext, tok)
 
 	resp, err := client.Get(p.IdentityURL)
@@ -81,7 +81,7 @@ func (p *Provider) GetIdentity(tok *oauth2.Token) (*psa.User, error) {
 	return user, nil
 }
 
-func readBody(r io.Reader) *psa.User {
+func readBody(r io.Reader) *id.User {
 	user := struct {
 		ID    string `json:"id"`
 		Email string `json:"email"`
@@ -93,7 +93,7 @@ func readBody(r io.Reader) *psa.User {
 		panic(err)
 	}
 
-	return &psa.User{
+	return &id.User{
 		Name:  user.Name,
 		Email: user.Email,
 		ID:    user.ID,
