@@ -1,15 +1,28 @@
-You should be able to do this:
+# ID
+
+Sessionless, passwordless authentication.
+
+### How
+
+JSON web tokens + OAuth identity providers.
+
+All you need to do is this:
 
 ```go
 package main
 
-import "github.com/bentranter/thrill/providers/twitch"
+import (
+    "net/http"
+
+    "github.com/bentranter/id"
+    "github.com/bentranter/id/providers/facebook"
+)
 
 func main() {
-    provider := twitch.New(clientID, clientSecret, callbackURL)
+    provider := facebook.New("<your-client-id>", "<your-client-secret>", "<your-client-callbacl-url>")
 
-    http.HandleFunc("/auth/twitch/authorize", provider.Authorize)
-    http.HandleFunc("/auth/twitch/callback", provider.Callback)
+    http.Handle("/auth/facebook/authorize", id.Authorize(provider))
+    http.Handle("/auth/facebook/callback", id.Callback(provider, "<your-redirect-url>"))
 
     http.ListenAndServe(":3000", nil)
 }
@@ -17,17 +30,8 @@ func main() {
 
 It works with Gorilla's Mux, Pat, Julien Schmidt's HttpRouter, and of course the standard `net/http` package.
 
-Need to figure out middleware approach... check Matt and Julien's stuff.
+---
 
-* Figure out why it won't work with Twitch
-* Solve LinkedIn opaque URL problem (think you can tweak http.Client)
-* Add param for redirect after callback URL fires
+> Knowing that one day, I might add tests and figure out how prevent CSRF efficiently, it fills you with determination.
 
-
-**FIGURE OUT WHY THIS SOMETIMES PANICS???**
-
-Maybe it's a race condition? The trace shows `id.genToken(0x0, 0x0, 0x0)`, and it only happens sometimes... Can I lock it?
-
-# WARNING
-
-This is extremely insecure. All errors need to be handled surrounding the token, the verification of the token isn't correct, the HMAC might not be occurring correctly, a token is still generated when `id.User.ID/Email/Name` is `nil`... basically it's bad.
+* Undertale *
