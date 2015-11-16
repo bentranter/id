@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-    provider := facebook.New("<your-client-id>", "<your-client-secret>", "<your-client-callbacl-url>")
+    provider := facebook.New("<your-client-id>", "<your-client-secret>", "<your-client-callback-url>")
 
     http.Handle("/auth/facebook/authorize", id.Authorize(provider))
     http.Handle("/auth/facebook/callback", id.Callback(provider, "<your-redirect-url>"))
