@@ -68,7 +68,7 @@ func HTTPRouterAuthorize(p Provider) httprouter.Handle {
 
 // HTTPRouterCallback is the thing as `Callback` but for
 // Julien Schmidt's HttpRouter
-func HTTPRouterCallback(p Provider) httprouter.Handle {
+func HTTPRouterCallback(p Provider, redirectURL string) httprouter.Handle {
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		code := p.GetCodeURL(r)
 		tok, err := p.GetToken(code)
@@ -78,6 +78,8 @@ func HTTPRouterCallback(p Provider) httprouter.Handle {
 		user, err := p.GetIdentity(tok)
 		cookie := genToken(user)
 		http.SetCookie(w, cookie)
+
+		http.Redirect(w, r, "http://localhost:3000/"+redirectURL, http.StatusFound)
 	})
 }
 
