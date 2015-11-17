@@ -17,7 +17,12 @@ func Middleware(handlers ...Handler) http.Handler {
 			err := handler(w, r)
 			if err != nil {
 				w.Write([]byte(err.Error()))
-				return
+				switch err.(type) {
+				// @TODO: Handle the huge number of
+				// possible errors
+				default:
+					return
+				}
 			}
 		}
 	})
