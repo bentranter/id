@@ -16,12 +16,18 @@ func Middleware(handlers ...Handler) http.Handler {
 		for _, handler := range handlers {
 			err := handler(w, r)
 			if err != nil {
-				w.Write([]byte(err.Error()))
-				switch err.(type) {
-				// @TODO: Handle the huge number of
-				// possible errors
+				switch err {
+				// Errors from jwt-go
+				case jwt.ErrInvalidKey:
+					http.Error(w, err.Error(), http.StatusUnauthorized)
+				case jwt.ErrHashUnavailable:
+					http.Error(w, err.Error(), http.StatusNotFound)
+				case jwt.ErrNoTokenInRequest:
+					http.Error(w, err.Error(), http.StatusForbidden)
+
+				// Other errors
 				default:
-					return
+					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
 			}
 		}
