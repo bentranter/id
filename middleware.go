@@ -54,6 +54,8 @@ func Verify(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// Verified is just a simple check to make sure that a
+// user is authenticated.
 func Verified(w http.ResponseWriter, r *http.Request) error {
 	w.Write([]byte("You're authenticated"))
 	return nil
