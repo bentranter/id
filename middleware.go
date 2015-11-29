@@ -1,10 +1,17 @@
 package id
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	jwt "github.com/dgrijalva/jwt-go"
+)
+
+var (
+	// ErrTokenInvalid means the token wasn't valid based
+	// on the value of its signature.
+	ErrTokenInvalid = errors.New("Invalid token")
 )
 
 // Handler is the function definition for our middleware.
@@ -17,6 +24,11 @@ func Middleware(handlers ...Handler) http.Handler {
 			err := handler(w, r)
 			if err != nil {
 				switch err {
+
+				// Ensure validity
+				case ErrTokenInvalid:
+					http.Error(w, err.Error(), http.StatusUnauthorized)
+
 				// Errors from jwt-go
 				case jwt.ErrInvalidKey:
 					http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -48,6 +60,10 @@ func Verify(w http.ResponseWriter, r *http.Request) error {
 		}
 		return "SECURE_STRING_HERE", nil
 	})
+
+	if !token.Valid {
+		return ErrTokenInvalid
+	}
 
 	fmt.Printf("Token: %+v\n", token)
 
