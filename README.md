@@ -1,5 +1,7 @@
 ![id (Golang)](https://github.com/bentranter/id/raw/master/assets/logo.png "id")
 
+[![GoDoc](https://godoc.org/github.com/bentranter/id?status.svg)](https://godoc.org/github.com/bentranter/id)
+
 Sessionless, passwordless authentication.
 
 **Don't use this yet! It's not ready for production.**
