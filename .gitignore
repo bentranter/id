@@ -2,3 +2,5 @@
 .DS_Store
 providers/twitch
 providers/linkedin
+*.pub
+*.rsa

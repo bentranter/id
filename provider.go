@@ -1,11 +1,8 @@
 package id
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/oauth2"
 )
@@ -41,14 +38,20 @@ func Callback(p Provider, redirectURL string) http.Handler {
 		code := p.GetCodeURL(r)
 		tok, err := p.GetToken(code)
 		if err != nil {
-			fmt.Fprintf(w, "ERROR: %s\n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		user, err := p.GetIdentity(tok)
 		if err != nil {
-			fmt.Fprintf(w, "ERROR: %s\n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		cookie := genToken(user)
+		cookie, err := GenToken(user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		http.SetCookie(w, cookie)
 
 		http.Redirect(w, r, "http://localhost:3000/"+redirectURL, http.StatusFound)
@@ -73,49 +76,20 @@ func HTTPRouterCallback(p Provider, redirectURL string) httprouter.Handle {
 		code := p.GetCodeURL(r)
 		tok, err := p.GetToken(code)
 		if err != nil {
-			fmt.Fprintf(w, "Error: %s\n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+
 		user, err := p.GetIdentity(tok)
-		cookie := genToken(user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		cookie, err := GenToken(user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		http.SetCookie(w, cookie)
 
 		http.Redirect(w, r, "http://localhost:3000/"+redirectURL, http.StatusFound)
 	})
-}
-
-// I NEED TO READ THE SPEC:
-//
-// http://tools.ietf.org/html/rfc7519
-func genToken(user *User) *http.Cookie {
-	jwt := jwt.New(jwt.SigningMethodHS256)
-
-	// Claims defined in the spec
-	jwt.Claims["iss"] = "YOUR_SITE_NAME_OR_URI"
-	jwt.Claims["sub"] = user.ID
-	jwt.Claims["aud"] = "YOUR_SITE_NAME_OR_URI"
-	jwt.Claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-	jwt.Claims["iat"] = time.Now().Unix()
-	jwt.Claims["jti"] = "state" // Figure out what to do about this... it's techinically used to prevent replay attacks
-
-	// These are optional/not in spec
-	jwt.Claims["name"] = user.Name
-	jwt.Claims["email"] = user.Email
-	jwt.Claims["id"] = user.ID
-	jwt.Claims["role"] = "user"
-
-	tokStr, err := jwt.SignedString([]byte("SECURE_KEY_HERE"))
-	if err != nil {
-		fmt.Printf("Error signing string: %s\n", err)
-	}
-
-	// Maybe use the access token expiry time in the raw
-	// expires...
-	return &http.Cookie{
-		Name:       "id",
-		Value:      tokStr,
-		Path:       "/",
-		RawExpires: "0",
-		// Eventually, you'll need `secure` to be true
-		HttpOnly: true,
-	}
 }
