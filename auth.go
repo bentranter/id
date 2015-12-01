@@ -1,6 +1,7 @@
 package id
 
 import (
+	"crypto/rand"
 	"errors"
 	"net/http"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 var (
-	signingKey []byte
+	signingKey = generateRandomBytes()
 
 	// ErrTokenInvalid means the token wasn't valid based
 	// on the value of its signature.
@@ -21,19 +22,16 @@ var (
 	// to sign the token was not the expected method, or
 	// is an invalid method.
 	ErrInvalidSigningMethod = errors.New("Invalid signing method")
+	// ErrNoSigningKey means that a signing key doesn't
+	// exist.
+	ErrNoSigningKey = errors.New("No signing key")
 )
 
-// AuthInit reads the public and private keys used to sign
-// the JSON web tokens, and can optionally set the
-// `signingKey`. The `signingKey` is only used for HMAC, so
-// it currently isn't being used.
-func AuthInit(key ...[]byte) {
-	switch len(key) {
-	case 1:
-		signingKey = key[0]
-	default:
-		signingKey = []byte("DEFAULT_SIGNING_KEY")
-	}
+// AuthInit overrides the randomly generated signing key.
+// Useful for users who want to use the same key across
+// server restarts, so users don't lose their session.
+func AuthInit(key []byte) {
+	signingKey = key
 }
 
 // GenToken generates a new JSON web token from a user.
@@ -49,11 +47,18 @@ func GenToken(user *User) (*http.Cookie, error) {
 	jwt.Claims["iat"] = time.Now().Unix()
 	jwt.Claims["jti"] = "state" // Figure out what to do about this... it's technically used to prevent replay attacks
 
-	// These are optional/not in spec
+	// These are optional/not in spec. They're used to
+	// to determine who's signed in, and their role
 	jwt.Claims["name"] = user.Name
 	jwt.Claims["email"] = user.Email
 	jwt.Claims["id"] = user.ID
 	jwt.Claims["role"] = "user"
+
+	// Sanity check to make sure signing key is longer
+	// than zero
+	if len(signingKey) == 0 {
+		return nil, ErrNoSigningKey
+	}
 
 	tokStr, err := jwt.SignedString(signingKey)
 	if err != nil {
@@ -103,4 +108,18 @@ func Verify(w http.ResponseWriter, r *http.Request) error {
 func Verified(w http.ResponseWriter, r *http.Request) error {
 	w.Write([]byte("You're authenticated"))
 	return nil
+}
+
+func generateRandomBytes() []byte {
+	// Use 32 bytes (256 bits) to satisfy the requirement
+	// for the HMAC key length.
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		// If this errors, it means that something is wrong
+		// the system's CSPRNG, which indicates a critical
+		// operating system failure. Panic and crash here
+		panic(err)
+	}
+	return b
 }
