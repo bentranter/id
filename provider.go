@@ -77,16 +77,19 @@ func HTTPRouterCallback(p Provider, redirectURL string) httprouter.Handle {
 		tok, err := p.GetToken(code)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		user, err := p.GetIdentity(tok)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		cookie, err := GenToken(user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		http.SetCookie(w, cookie)
 

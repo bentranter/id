@@ -2,7 +2,6 @@ package id
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -58,7 +57,6 @@ func GenToken(user *User) (*http.Cookie, error) {
 
 	tokStr, err := jwt.SignedString(signingKey)
 	if err != nil {
-		fmt.Println("Error: ", err)
 		return nil, err
 	}
 
@@ -82,11 +80,8 @@ func Verify(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	fmt.Println("Cookie: ", cookie.Value)
-
 	token, err := jwt.Parse(cookie.Value, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
-		fmt.Println("Ok ", ok)
 		if ok == false {
 			return nil, ErrInvalidSigningMethod
 		}
@@ -96,13 +91,9 @@ func Verify(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	fmt.Println("Validty: ", token.Valid)
-
 	if token.Valid == false {
 		return ErrTokenInvalid
 	}
-
-	fmt.Printf("Token: %+v\n", token)
 
 	return nil
 }
