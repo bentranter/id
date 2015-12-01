@@ -28,18 +28,23 @@ func Middleware(handlers ...Handler) http.Handler {
 				// Ensure validity
 				case ErrTokenInvalid:
 					http.Error(w, err.Error(), http.StatusUnauthorized)
+					return
 
 				// Errors from jwt-go
 				case jwt.ErrInvalidKey:
 					http.Error(w, err.Error(), http.StatusUnauthorized)
+					return
 				case jwt.ErrHashUnavailable:
 					http.Error(w, err.Error(), http.StatusNotFound)
+					return
 				case jwt.ErrNoTokenInRequest:
 					http.Error(w, err.Error(), http.StatusForbidden)
+					return
 
 				// Other errors
 				default:
 					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
 				}
 			}
 		}
