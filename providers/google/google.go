@@ -27,8 +27,8 @@ const (
 func New() *Provider {
 	return &Provider{
 		config: &oauth2.Config{
-			ClientID:     os.Getenv("GPLUS_KEY"),
-			ClientSecret: os.Getenv("GPLUS_SECRET"),
+			ClientID:     os.Getenv("GOOGLE_KEY"),
+			ClientSecret: os.Getenv("GOOGLE_SECRET"),
 			Endpoint:     google.Endpoint,
 			RedirectURL:  "http://localhost:3000/auth/gplus/callback",
 			Scopes:       []string{ScopeEmail, ScopeProfile},
