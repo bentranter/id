@@ -4,7 +4,8 @@
 
 Sessionless, passwordless authentication.
 
-**Don't use this yet! It's not ready for production.**
+######This is pre-alpha. You may use this, but I can't promise it'll work the way you expect it to. Also, there is currently no CSRF protection... But it'll come soon.
+
 
 ### How
 
