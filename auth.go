@@ -40,12 +40,9 @@ func GenToken(user *User) (*http.Cookie, error) {
 	tokExp := time.Now().Add(time.Hour * 72).Unix()
 
 	// Claims defined in the spec
-	jwt.Claims["iss"] = "YOUR_SITE_NAME_OR_URI"
 	jwt.Claims["sub"] = user.ID
-	jwt.Claims["aud"] = "YOUR_SITE_NAME_OR_URI"
 	jwt.Claims["exp"] = tokExp
 	jwt.Claims["iat"] = time.Now().Unix()
-	jwt.Claims["jti"] = "state" // Figure out what to do about this... it's technically used to prevent replay attacks
 
 	// These are optional/not in spec. They're used to
 	// to determine who's signed in, and their role
@@ -71,7 +68,7 @@ func GenToken(user *User) (*http.Cookie, error) {
 		Name:       "id",
 		Value:      tokStr,
 		Path:       "/",
-		RawExpires: string(tokExp), // might horribly mess up
+		RawExpires: string(tokExp),
 		// Eventually, you'll need `secure` to be true
 		HttpOnly: true,
 	}, nil
