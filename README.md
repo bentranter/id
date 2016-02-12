@@ -35,8 +35,6 @@ func main() {
 
 It works with Gorilla's Mux, Pat, Julien Schmidt's HttpRouter, and of course the standard `net/http` package.
 
----
+### Looking for a more "normal" password flow?
 
-> Knowing that one day, I might add tests and figure out how prevent CSRF efficiently, it fills you with determination.
-
-*- Undertale*
+Checkout [Password](https://github.com/bentranter/password)
