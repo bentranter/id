@@ -2,9 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/bentranter/id?status.svg)](https://godoc.org/github.com/bentranter/id)
 
-Sessionless, passwordless authentication.
-
-######This is pre-alpha. You may use this, but I can't promise it'll work the way you expect it to. Also, there is currently no CSRF protection... But it'll come soon.
+Sessionless, passwords was authentication. 
 
 
 ### How
