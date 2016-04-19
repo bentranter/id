@@ -26,7 +26,6 @@ func main() {
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/auth/google/authorize", id.Authorize(provider))
 	serveMux.Handle("/auth/google/callback", id.Callback(provider, "auth/restricted"))
-	serveMux.Handle("/auth/gplus/callback", id.Callback(provider, "auth/restricted"))
 	serveMux.Handle("/auth/restricted", id.Middleware(id.Verify, id.Verified))
 
 	// Gorilla's Pat. Requires type assertion.
